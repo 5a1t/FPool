@@ -3,6 +3,8 @@ from twisted.internet import reactor
 from struct import pack
 import json
 import array
+import signal
+import sys
 
 def craft_response(gw_response):
 	result = {}
@@ -79,7 +81,7 @@ class getwork_response():
 
 
 class pool_config():
-	longpoll = " ";
+	longpoll = "";
 
 
 class Pool(resource.Resource):
@@ -91,17 +93,32 @@ class Pool(resource.Resource):
 	print request.requestHeaders
 	print request.content.read()
 	request.setHeader("Content-Type", "text/plain; charset=utf-8")
+	request.setHeader("X-Roll-Ntime", "1")
+	#request.setHeader("X-Long-Polling",'/lp')
+	request.setHeader("X-Stratum", "stratum+tcp://192.168.1.129:8080")
         return "<html><h1>Welcome to fpool!</h1></html>"
 
     def render_POST(self, request):
 	print "POST"
 	print request.requestHeaders
 	print request.content.read()
-	self.gw_response.gw_data = craft_data(1,"0000000000000000000000000000000000000000000000000000000000000000","4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b",1231006505,486604799,2083236893)
+        request.setHeader("Content-Type", "text/plain; charset=utf-8")
+        request.setHeader("X-Roll-Ntime", "1")
+        #request.setHeader("X-Long-Polling",'/lp')
+	request.setHeader("X-Stratum", "stratum+tcp://192.168.1.129:8080")
+	self.gw_response.gw_data = craft_data(1,"0000000000000000000000000000000000000000000000000000000000000000","4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b",1231006505,486604797,2083236893)
 
 	return craft_response(self.gw_response) 
 
 
-pool = server.Site(Pool())
-reactor.listenTCP(8080, pool)
-reactor.run()
+
+if __name__ == '__main__':
+	print "Server started, press control-c to exit."
+	try:
+		pool = server.Site(Pool())
+		reactor.listenTCP(8080, pool)
+		reactor.run()
+	except KeyboardInterrupt:
+		print("Shutting down reactor and exiting.")
+		reactor.stop()
+		sys.exit(0)
