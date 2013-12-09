@@ -1,10 +1,11 @@
+import sys
+sys.path.append('/Library/Python/2.5/site-packages')
 from twisted.web import server, resource
 from twisted.internet import reactor
 from struct import pack
 import json
 import array
 import signal
-import sys
 
 def craft_response(gw_response):
 	result = {}
@@ -35,6 +36,19 @@ def craft_response(gw_response):
 # Supply version as integer, prevhash as hex, merkroot as hex
 # time as int, difficulty as int, nonce as int.
 def craft_data(version,prevhash,merkroot,time,difficulty,nonce):
+
+
+	#must use hex float for greater accuracy.
+	#difficulty = 26959535291011309493156476344723991336010898738574164086137773096960/difficulty
+	#difficulty = "{:x}".format(difficulty)
+	#print difficulty
+	#diff_exponent = (len(difficulty) - len(difficulty.rstrip('0')))
+	#print diff_exponent
+
+	difficulty = 65535/difficulty
+	difficulty = "{:x}".format(difficulty).zfill(6)
+	difficulty = "1d"+difficulty
+	difficulty = int(difficulty, 16)
 
 	#convert fields to binary and pad them if necessary
 	bin_version =  "{0:b}".format(version).zfill(32)
@@ -106,8 +120,22 @@ class Pool(resource.Resource):
         request.setHeader("X-Roll-Ntime", "1")
         #request.setHeader("X-Long-Polling",'/lp')
 	request.setHeader("X-Stratum", "stratum+tcp://192.168.1.129:8080")
-	self.gw_response.gw_data = craft_data(1,"0000000000000000000000000000000000000000000000000000000000000000","4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b",1231006505,486604797,2083236893)
+	version = 1
+	prevhash = "0000000000000000000000000000000000000000000000000000000000000000"
+	merkroot = "4a5e1e4baab89f3a32518a88c31bc87f618f76673e2cc77ab2127b7afdeda33b"
+	time = 1231006505
+	#difficulty = 486604797 - 1
+	#difficulty = 470000000 - 70
+	#difficulty = 470900000 - 14
+	# ff ff 00 1d (0x1d00ffff hex
+	difficulty = 1
+	nonce = 2083236893
 
+	self.gw_response.gw_data = craft_data(version,prevhash,merkroot,time,difficulty,nonce)
+
+#486604797
+
+#486604797
 	return craft_response(self.gw_response) 
 
 
